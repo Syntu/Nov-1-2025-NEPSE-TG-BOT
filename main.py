@@ -1,10 +1,10 @@
+from telegram import Update
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram.constants import ParseMode
+from dotenv import load_dotenv
 import os
 import requests
 from bs4 import BeautifulSoup
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
-from telegram.constants import ParseMode
-from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
@@ -25,7 +25,7 @@ def fetch_stock_data_by_symbol(symbol):
         print("Error: No table found in the response.")
         return None
 
-    rows = table.find_all('tr')[1:]  # Skip header row
+    rows = table.find_all('tr')[1:]
 
     for row in rows:
         cols = row.find_all('td')
@@ -98,7 +98,7 @@ if __name__ == "__main__":
     TOKEN = os.getenv("TELEGRAM_API_KEY")
 
     # Set up Telegram bot application
-    application = ApplicationBuilder().token(TOKEN).build()
+    application = Application.builder().token(TOKEN).build()
 
     # Add handlers to the application
     application.add_handler(CommandHandler("start", start))
