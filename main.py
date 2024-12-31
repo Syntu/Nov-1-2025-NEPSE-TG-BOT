@@ -2,24 +2,31 @@ import os
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext
-from telegram.ext import filters  # filters को सही इम्पोर्ट
+from telegram.ext import filters  # Correct import for filters
 import requests
 from bs4 import BeautifulSoup
 
-# .env फाइलबाट भेरिएबल लोड गर्नुहोस्
+# Load environment variables from the .env file
 load_dotenv()
 
-# Telegram Bot API टोकन र पोर्ट लोड गर्नुहोस्
+# Load the Telegram Bot API token and port from environment variables
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_API")
 PORT = int(os.getenv("PORT"))
 
-# NEPSE वेबसाइटबाट स्टोक डाटा स्क्र्याप गर्ने फङ्सन
+# Check if the BOT_TOKEN is loaded correctly
+if not BOT_TOKEN:
+    raise ValueError("Error: TELEGRAM_BOT_API token not found in environment variables.")
+
+# Function to fetch stock data from NEPSE website
 def fetch_stock_data(symbol: str):
-    url = f"https://nepse.ct.ws/{symbol}"  # URL को structure अनुसार यो अपडेट गर्नुहोस्
+    url = f"https://nepse.ct.ws/{symbol}"  # Update URL structure as needed
     response = requests.get(url)
+    
+    if response.status_code != 200:
+        return {"Error": f"Failed to fetch data. HTTP Status Code: {response.status_code}"}
+    
     soup = BeautifulSoup(response.text, "html.parser")
     
-    # डाटा निकाल्ने प्रक्रिया यहाँ राख्नुहोस् (HTML संरचना अनुसार)
     try:
         data = {
             "Symbol": symbol,
@@ -35,25 +42,25 @@ def fetch_stock_data(symbol: str):
             "Up from Low": soup.find("span", {"class": "up-from-low"}).text.strip(),
         }
         return data
-    except Exception as e:
-        return {"Error": str(e)}
+    except AttributeError as e:
+        return {"Error": f"Data extraction error: {str(e)}"}
 
-# /start कमाण्डको लागि ह्यान्डलर
+# Handler for the /start command
 def start(update: Update, context: CallbackContext):
-    update.message.reply_text("नमस्कार! स्टोक सिम्बल पठाएर डाटा प्राप्त गर्नुहोस्।")
+    update.message.reply_text("Hello! Send a stock symbol to get data.")
 
-# सन्देशमा स्टोक सिम्बल खोज्न र डाटा ल्याउनको लागि ह्यान्डलर
+# Handler for messages that fetch stock data based on the symbol
 def handle_message(update: Update, context: CallbackContext):
     text = update.message.text.strip()
     
-    if text.isupper() and len(text) <= 5:  # सिम्बलको लागि निश्चित नियम (जस्तै, 1-5 अक्षर र ठूलो अक्षर)
+    if text.isupper() and len(text) <= 5:  # Symbol validation (1-5 characters, uppercase)
         stock_data = fetch_stock_data(text)
         
         if "Error" in stock_data:
-            update.message.reply_text(f"त्रुटि: {stock_data['Error']}")
+            update.message.reply_text(f"Error: {stock_data['Error']}")
         else:
             response = (
-                f"Latest stock Data for <b>{stock_data['Symbol']}</b>:\n\n"
+                f"Latest stock data for <b>{stock_data['Symbol']}</b>:\n\n"
                 f"LTP: {stock_data['LTP']}\n"
                 f"Change Percent: {stock_data['Change Percent']}\n"
                 f"Day High: {stock_data['Day High']}\n"
@@ -67,21 +74,21 @@ def handle_message(update: Update, context: CallbackContext):
             )
             update.message.reply_text(response, parse_mode='HTML')
     else:
-        update.message.reply_text("कृपया मान्य स्टोक सिम्बल (जस्तै ABC) पठाउनुहोस्।")
+        update.message.reply_text("Please send a valid stock symbol (e.g., ABC).")
 
-# मुख्य बोट फङ्सन
+# Main function to set up the bot
 def main():
-    # Updater र Dispatcher सेट गर्नुहोस्
+    # Set up the Updater and Dispatcher
     updater = Updater(BOT_TOKEN, use_context=True)
     dispatcher = updater.dispatcher
 
-    # कमाण्ड ह्यान्डलरहरू
+    # Command handler for /start
     dispatcher.add_handler(CommandHandler('start', start))
 
-    # सन्देश ह्यान्डलर: स्टोक सिम्बल प्राप्त गर्ने
+    # Message handler for stock symbol messages
     dispatcher.add_handler(MessageHandler(filters.Text & ~filters.Command, handle_message))
 
-    # बोट सुरु गर्नुहोस्
+    # Start the bot
     updater.start_polling()
     updater.idle()
 
