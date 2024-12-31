@@ -1,7 +1,8 @@
 import os
 from dotenv import load_dotenv
 from telegram import Update
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
+from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext
+from telegram.ext import filters  # filters को सही इम्पोर्ट
 import requests
 from bs4 import BeautifulSoup
 
@@ -78,7 +79,7 @@ def main():
     dispatcher.add_handler(CommandHandler('start', start))
 
     # सन्देश ह्यान्डलर: स्टोक सिम्बल प्राप्त गर्ने
-    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
+    dispatcher.add_handler(MessageHandler(filters.Text & ~filters.Command, handle_message))
 
     # बोट सुरु गर्नुहोस्
     updater.start_polling()
