@@ -11,7 +11,7 @@ load_dotenv()
 
 # Function to fetch stock data
 def fetch_stock_data_by_symbol(symbol):
-    url = "https://nepse.ct.ws"
+    url = "https://nepse.ct.ws/"
     try:
         # Disable SSL verification (use cautiously in production)
         response = requests.get(url, verify=False)
@@ -92,7 +92,8 @@ async def handle_stock_symbol(update: Update, context: ContextTypes.DEFAULT_TYPE
             f"Up from Low: {data['Up from Low']}"
         )
     else:
-        response = f"""Symbol '{symbol}' पत्ता लागेन।\nकृपया पुनः प्रयास गर्नुहोस्।"""
+        response = f"स्टक सिम्बोल '{symbol}' फेला परेन।\nकृपया सही सिम्बोल दिनुहोस् वा फेरि प्रयास गर्नुहोस्।"
+
     await update.message.reply_text(response, parse_mode=ParseMode.HTML)
 
 # Main function to set up the bot and run polling
