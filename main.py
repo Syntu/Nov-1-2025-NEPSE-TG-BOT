@@ -1,10 +1,10 @@
-from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
-from telegram.constants import ParseMode
-from dotenv import load_dotenv
 import os
 import requests
 from bs4 import BeautifulSoup
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram.constants import ParseMode
+from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
@@ -13,20 +13,22 @@ load_dotenv()
 def fetch_stock_data_by_symbol(symbol):
     url = "https://nepse.ct.ws/"
     response = requests.get(url)
-
+    
     if response.status_code != 200:
-        print("Error: Unable to fetch data. Status code:", response.status_code)
+        print("Error: Unable to fetch data from the website. Status code:", response.status_code)
         return None
 
     soup = BeautifulSoup(response.text, 'html.parser')
 
+    # Find the table containing stock data
     table = soup.find('table')
     if not table:
         print("Error: No table found in the response.")
         return None
 
-    rows = table.find_all('tr')[1:]
+    rows = table.find_all('tr')[1:]  # Skipping the header row
 
+    # Loop through rows and find matching symbol
     for row in rows:
         cols = row.find_all('td')
         row_symbol = cols[1].text.strip()
@@ -44,6 +46,7 @@ def fetch_stock_data_by_symbol(symbol):
             down_from_high = cols[11].text.strip()
             up_from_low = cols[12].text.strip()
 
+            # Return extracted data as a dictionary
             return {
                 'Symbol': symbol,
                 'Day High': day_high,
@@ -56,7 +59,7 @@ def fetch_stock_data_by_symbol(symbol):
                 '52 Week Low': week_52_low,
                 'Previous Close': previous_close,
                 'Down from High': down_from_high,
-                'Up from Low': up_from_low,
+                'Up from Low': up_from_low
             }
     return None
 
@@ -81,16 +84,17 @@ async def handle_stock_symbol(update: Update, context: ContextTypes.DEFAULT_TYPE
             f"Change Percent: {data['Change Percent']}\n"
             f"Day High: {data['Day High']}\n"
             f"Day Low: {data['Day Low']}\n"
-            f"Previous Close: {data['Previous Close']}\n"
-            f"Down from High: {data['Down from High']}\n"
-            f"Up from Low: {data['Up from Low']}\n"
             f"52 Week High: {data['52 Week High']}\n"
             f"52 Week Low: {data['52 Week Low']}\n"
             f"Volume: {data['Volume']}\n"
-            f"Turnover: {data['Turnover']}"
+            f"Turnover: {data['Turnover']}\n"
+            f"Previous Close: {data['Previous Close']}\n"
+            f"Down from High: {data['Down from High']}\n"
+            f"Up from Low: {data['Up from Low']}"
         )
     else:
-        response = f"""Symbol '{symbol}' को डेटा फेला परेन।\nकृपया स्पेलिङ चेक गर्नुहोस् र पुन: प्रयास गर्नुहोस्।"""
+        response = f"Symbol '{symbol}' को डेटा फेला परेन।\nकृपया स्पेलिङ चेक गर्नुहोस् र पुन: प्रयास गर्नुहोस्।"
+    
     await update.message.reply_text(response, parse_mode=ParseMode.HTML)
 
 # Main function to set up the bot and run polling
@@ -98,7 +102,7 @@ if __name__ == "__main__":
     TOKEN = os.getenv("TELEGRAM_API_KEY")
 
     # Set up Telegram bot application
-    application = Application.builder().token(TOKEN).build()
+    application = ApplicationBuilder().token(TOKEN).build()
 
     # Add handlers to the application
     application.add_handler(CommandHandler("start", start))
