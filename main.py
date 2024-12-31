@@ -79,7 +79,7 @@ def handle_message(update: Update, context: CallbackContext):
 # Main function to set up the bot
 def main():
     # Set up the Updater and Dispatcher
-    updater = Updater(BOT_TOKEN, use_context=True)
+    updater = Updater(BOT_TOKEN)
     dispatcher = updater.dispatcher
 
     # Command handler for /start
