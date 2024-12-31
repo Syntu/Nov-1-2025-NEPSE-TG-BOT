@@ -2,7 +2,8 @@ import os
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from telegram import Update, ParseMode
+from telegram import Update
+from telegram.constants import ParseMode  # Updated import for ParseMode
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 # Load environment variables from .env file
