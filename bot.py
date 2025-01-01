@@ -1,35 +1,6 @@
 import os
 import requests
 from bs4 import BeautifulSoup
-from dotenv import load_dotenv
-from telegram import Update, ParseMode
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
-
-# Load environment variables from .env file
-load_dotenv()
-
-TELEGRAM_BOT_API = os.getenv('TELEGRAM_BOT_API')
-PORT = int(os.getenv('PORT', '5000'))
-
-async def fetch_stock_data(symbol):
-    url = f"https://nepse.ct.ws/api/stock/{symbol}"  # Replace with the actual endpoint
-    response = requests.get(url)
-    if response.status_code == 200:
-        return response.json()
-    return None
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Welcome to the Stock Bot! Use /stock <symbol> to get the latest stock data.")
-
-async def stock(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if len(context.args) != 1:
-        await update.message.reply_text("Please provide a stock symbol. Usage: /stock <symbol>")
-        return
-
-    symbol = context.args[0].upper()
-    data = await fetch_stock_data(symbol)import os
-import requests
-from bs4 import BeautifulSoup
 from telegram import Update, Bot
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 from dotenv import load_dotenv
@@ -57,9 +28,9 @@ def start(update: Update, context: CallbackContext) -> None:
         "Symbol दिनुस जस्तै:- NMB, SHINE, SHPC, SWBBL"
     )
 
-def get_stock_data(symbol):
+async def fetch_stock_data(symbol):
     url = f"https://nepse.ct.ws/{symbol}"
-    response = requests.get(url)
+    response = await requests.get(url)
     if response.status_code == 200:
         soup = BeautifulSoup(response.text, 'html.parser')
         # Extract the required data from the soup object
@@ -80,9 +51,9 @@ def get_stock_data(symbol):
     else:
         return None
 
-def stock(update: Update, context: CallbackContext) -> None:
+async def stock(update: Update, context: CallbackContext) -> None:
     symbol = update.message.text.upper()
-    data = get_stock_data(symbol)
+    data = await fetch_stock_data(symbol)
     if data:
         response = (
             f"Symbol: {data['Symbol']}\n"
@@ -113,6 +84,6 @@ dp.add_handler(MessageHandler(Filters.text & ~Filters.command, stock))
 
 if __name__ == '__main__':
     updater.start_webhook(listen="0.0.0.0", port=int(os.getenv("PORT")), url_path=TOKEN)
-    updater.bot.set_webhook(f"https://{your_domain}/{TOKEN}")
+    updater.bot.set_webhook(f"https://your_render_service_url/{TOKEN}")
 
     app.run(port=int(os.getenv("PORT")), debug=True)
