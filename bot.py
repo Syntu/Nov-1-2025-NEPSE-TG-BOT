@@ -20,10 +20,10 @@ def start(update: Update, context: CallbackContext) -> None:
 
 async def fetch_stock_data(symbol):
     url = f"https://nepse.ct.ws/{symbol}"
-    response = requests.get(url)
-    if response.status_code == 200:
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
         soup = BeautifulSoup(response.text, 'html.parser')
-        # Extract the required data from the soup object
         data = {
             "Symbol": symbol,
             "LTP": soup.find('span', {'id': 'last_price'}).text,
@@ -38,7 +38,11 @@ async def fetch_stock_data(symbol):
             "Up From Low%": soup.find('span', {'id': 'up_from_low'}).text,
         }
         return data
-    else:
+    except requests.exceptions.RequestException as e:
+        print(f"Request error: {e}")
+        return None
+    except AttributeError as e:
+        print(f"Parsing error: {e}")
         return None
 
 async def stock(update: Update, context: CallbackContext) -> None:
