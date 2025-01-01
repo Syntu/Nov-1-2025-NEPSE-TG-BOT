@@ -5,3 +5,4 @@ beautifulsoup4
 flask
 gunicorn
 pymysql
+chardet
