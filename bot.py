@@ -2,13 +2,14 @@ import os
 import requests
 from bs4 import BeautifulSoup
 from telegram import Update, Bot
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 from dotenv import load_dotenv
 from flask import Flask, request
 
 load_dotenv()
 
 TOKEN = os.getenv('BOT_TOKEN')
+PORT = int(os.getenv('PORT', 5000))  # Default to port 5000 if PORT is not set
 bot = Bot(token=TOKEN)
 
 app = Flask(__name__)
@@ -17,7 +18,7 @@ app = Flask(__name__)
 def webhook():
     if request.method == 'POST':
         update = Update.de_json(request.get_json(), bot)
-        application.process_update(update)
+        dp.process_update(update)
         return "ok", 200
 
 def start(update: Update, context: CallbackContext) -> None:
@@ -28,7 +29,7 @@ def start(update: Update, context: CallbackContext) -> None:
         "Symbol दिनुस जस्तै:- NMB, SHINE, SHPC, SWBBL"
     )
 
-async def fetch_stock_data(symbol):
+def fetch_stock_data(symbol):
     url = f"https://nepse.ct.ws/{symbol}"
     response = requests.get(url)
     if response.status_code == 200:
@@ -51,9 +52,9 @@ async def fetch_stock_data(symbol):
     else:
         return None
 
-async def stock(update: Update, context: CallbackContext) -> None:
+def stock(update: Update, context: CallbackContext) -> None:
     symbol = update.message.text.upper()
-    data = await fetch_stock_data(symbol)
+    data = fetch_stock_data(symbol)
     if data:
         response = (
             f"Symbol: {data['Symbol']}\n"
@@ -76,12 +77,14 @@ async def stock(update: Update, context: CallbackContext) -> None:
         )
     update.message.reply_text(response)
 
-application = Application.builder().token(TOKEN).build()
+updater = Updater(TOKEN)
+dp = updater.dispatcher
 
-application.add_handler(CommandHandler("start", start))
-application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, stock))
+dp.add_handler(CommandHandler("start", start))
+dp.add_handler(MessageHandler(Filters.text & ~Filters.command, stock))
 
 if __name__ == '__main__':
-    updater.start_webhook(listen="0.0.0.0", port=int(os.getenv("PORT")), url_path=TOKEN)
+    updater.start_webhook(listen="0.0.0.0", port=PORT, url_path=TOKEN)
     updater.bot.set_webhook(f"https://onesyntootg.onrender.com/{TOKEN}")
-    app.run(port=int(os.getenv("PORT")), debug=True)
+
+    app.run(host='0.0.0.0', port=PORT, debug=True)  # Ensure Flask app runs on the correct port
