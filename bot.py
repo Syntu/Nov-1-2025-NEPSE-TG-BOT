@@ -82,7 +82,6 @@ application.add_handler(CommandHandler("start", start))
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, stock))
 
 if __name__ == '__main__':
-    application.run_webhook(listen="0.0.0.0", port=int(os.getenv("PORT")), url_path=TOKEN)
-    application.bot.set_webhook(f"https://your_render_service_url/{TOKEN}")
-
+    updater.start_webhook(listen="0.0.0.0", port=int(os.getenv("PORT")), url_path=TOKEN)
+    updater.bot.set_webhook(f"https://onesyntootg.onrender.com/{TOKEN}")
     app.run(port=int(os.getenv("PORT")), debug=True)
