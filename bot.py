@@ -2,7 +2,7 @@ import os
 import requests
 from bs4 import BeautifulSoup
 from telegram import Update, Bot
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
 from dotenv import load_dotenv
 from flask import Flask, request
 
@@ -17,7 +17,7 @@ app = Flask(__name__)
 def webhook():
     if request.method == 'POST':
         update = Update.de_json(request.get_json(), bot)
-        dp.process_update(update)
+        application.process_update(update)
         return "ok", 200
 
 def start(update: Update, context: CallbackContext) -> None:
@@ -30,7 +30,7 @@ def start(update: Update, context: CallbackContext) -> None:
 
 async def fetch_stock_data(symbol):
     url = f"https://nepse.ct.ws/{symbol}"
-    response = await requests.get(url)
+    response = requests.get(url)
     if response.status_code == 200:
         soup = BeautifulSoup(response.text, 'html.parser')
         # Extract the required data from the soup object
@@ -76,14 +76,13 @@ async def stock(update: Update, context: CallbackContext) -> None:
         )
     update.message.reply_text(response)
 
-updater = Updater(TOKEN)
-dp = updater.dispatcher
+application = Application.builder().token(TOKEN).build()
 
-dp.add_handler(CommandHandler("start", start))
-dp.add_handler(MessageHandler(Filters.text & ~Filters.command, stock))
+application.add_handler(CommandHandler("start", start))
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, stock))
 
 if __name__ == '__main__':
-    updater.start_webhook(listen="0.0.0.0", port=int(os.getenv("PORT")), url_path=TOKEN)
-    updater.bot.set_webhook(f"https://your_render_service_url/{TOKEN}")
+    application.run_webhook(listen="0.0.0.0", port=int(os.getenv("PORT")), url_path=TOKEN)
+    application.bot.set_webhook(f"https://your_render_service_url/{TOKEN}")
 
     app.run(port=int(os.getenv("PORT")), debug=True)
