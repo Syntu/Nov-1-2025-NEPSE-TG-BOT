@@ -5,6 +5,7 @@ from telegram import Update, Bot
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
 from dotenv import load_dotenv
 from flask import Flask, request
+import chardet
 
 load_dotenv()
 
@@ -23,17 +24,23 @@ def webhook():
 
 def start(update: Update, context: CallbackContext) -> None:
     update.message.reply_text(
-        "Welcome •0†5 to Syntoo's NEPSE”9Û9bot!\n"
-        "1Î91Ó9 1Î91Ô3 1Ð11Ó01Ï91Ó0 1Ï41Ó01Ò51Ó11Ñ51Ô3 1Ñ31Ð81Ô51Ð81Ó31Ò4 ?\n"
-        "1Ñ4 1Ñ11Ô51Ñ51Ó01Ï91Ô51Ï91Ô0 1Ï01Ô31Ï61Ó11Ò51Ó01Ñ81Ô51Ï51Ó3 ”9ü8”9ý1\n"
-        "Symbol 1Ð61Ó11Ð81Ó31Ò4 1Ï61Ò41Ô51Ð41Ô0:- NMB, SHINE, SHPC, SWBBL"
+        "Welcome ðŸ™ to Syntoo's NEPSEðŸ’¹bot!\n"
+        "à¤•à¥‡ à¤•à¥‹ à¤¡à¤¾à¤Ÿà¤¾ à¤šà¤¾à¤¹à¤¿à¤¯à¥‹ à¤­à¤¨à¥à¤¨à¥à¤¸ ?\n"
+        "à¤® à¤«à¥à¤¯à¤¾à¤Ÿà¥à¤Ÿà¥ˆ à¤–à¥‹à¤œà¤¿à¤¹à¤¾à¤²à¥à¤›à¥ ðŸ˜‚ðŸ˜…\n"
+        "Symbol à¤¦à¤¿à¤¨à¥à¤¸ à¤œà¤¸à¥à¤¤à¥ˆ:- NMB, SHINE, SHPC, SWBBL"
     )
 
 async def fetch_stock_data(symbol):
     url = f"https://nepse.ct.ws/{symbol}"
     response = requests.get(url)
     if response.status_code == 200:
-        soup = BeautifulSoup(response.text, 'html.parser')
+        # Detect encoding
+        result = chardet.detect(response.content)
+        encoding = result['encoding']
+        
+        # Parse the response with detected encoding
+        soup = BeautifulSoup(response.content.decode(encoding), 'html.parser')
+        
         # Extract the required data from the soup object
         data = {
             "Symbol": symbol,
@@ -71,9 +78,9 @@ async def stock(update: Update, context: CallbackContext) -> None:
         )
     else:
         response = (
-            f"Symbol ..... '1Ñ81Ô51Ñ51Ó0, 1Ñ11Ó91Ñ81Ó0 1Ñ01Ñ61Ó91Ð8 1Ð4 •0Í7•0Í71Ö8\n"
-            f"1Ð81Í41Ð41Ô51Ð41Ó11Ð81Ó3 Symbol 1Ñ61Ó01Ñ41Ô51Ñ61Ô3 1Ò41Ï31Ô51Ï1 1Ñ11Ó91Ñ61Ó1 1Ð61Ó11Ð81Ó31Ò41Ö8\n"
-            f"1Ñ4 1Ñ11Ó91Ñ61Ó1 1Ï01Ô31Ï61Ô51Ï51Ó31Ö8"
+            f"Symbol ..... 'à¤²à¥à¤¯à¤¾, à¤«à¥‡à¤²à¤¾ à¤ªà¤°à¥‡à¤¨ à¤¤ ðŸ¤—ðŸ¤—à¥¤\n"
+            f"à¤¨à¤†à¤¤à¥à¤¤à¤¿à¤¨à¥ Symbol à¤°à¤¾à¤®à¥à¤°à¥‹ à¤¸à¤™à¥à¤— à¤«à¥‡à¤°à¤¿ à¤¦à¤¿à¤¨à¥à¤¸à¥¤\n"
+            f"à¤® à¤«à¥‡à¤°à¤¿ à¤–à¥‹à¤œà¥à¤›à¥à¥¤"
         )
     update.message.reply_text(response)
 
