@@ -2,15 +2,19 @@ import os
 import json
 import logging
 import requests
+import asyncio
 from bs4 import BeautifulSoup
 from flask import Flask, request, jsonify
-from telegram import Update, Bot, Chat
+from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from telegram.constants import ParseMode
 from dotenv import load_dotenv
 
 # ---------- Logging ----------
-logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO
+)
 logger = logging.getLogger(__name__)
 
 # ---------- Load Environment Variables ----------
@@ -186,24 +190,25 @@ application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_s
 # ---------- Flask Routes ----------
 @app.route("/")
 def home():
-    return "Syntoo Nepse Bot – Free Edition is running!", 200
+    return "Syntoo Nepse Bot – Render Edition is running!", 200
 
 @app.route("/" + TOKEN, methods=["POST"])
-async def webhook():
+def webhook():
+    print("🔔 Webhook triggered")
     update = Update.de_json(request.get_json(force=True), bot)
-    await application.process_update(update)
+    asyncio.run(application.process_update(update))
     return jsonify({"ok": True})
 
 @app.route("/send_daily_summary")
-async def send_summary_route():
-    msg = await send_daily_summary()
+def send_summary_route():
+    msg = asyncio.run(send_daily_summary())
     return jsonify({"status": msg})
 
 # ---------- Run ----------
 if __name__ == "__main__":
     if WEBHOOK_URL:
         full_url = f"{WEBHOOK_URL}{TOKEN}"
-        bot.set_webhook(url=full_url)
-        logger.info(f"Webhook set at {full_url}")
+        asyncio.run(bot.set_webhook(url=full_url))
+        logger.info(f"✅ Webhook set at {full_url}")
     port = int(os.getenv("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
