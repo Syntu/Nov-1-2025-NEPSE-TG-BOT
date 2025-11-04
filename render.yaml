@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: Nepsestockbot
+    env: python
+    plan: free
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: TELEGRAM_API_KEY
+        fromSecret: TELEGRAM_API_KEY
+      - key: WEBHOOK_URL
+        value: https://tg1nov.onrender.com/
+      - key: BOT_OWNER_CHAT_ID
+        value: "0"
+    autoDeploy: true
