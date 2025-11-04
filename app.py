@@ -5,7 +5,7 @@ import requests
 import asyncio
 from bs4 import BeautifulSoup
 from flask import Flask, request, jsonify
-from telegram import Update
+from telegram import Update, Bot
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from telegram.constants import ParseMode
 from dotenv import load_dotenv
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 # ---------- Load Environment Variables ----------
 load_dotenv()
 TOKEN = os.getenv("TELEGRAM_API_KEY")
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")
+WEBHOOK_URL = os.getenv("WEBHOOK_URL", "https://tg1nov.onrender.com/")
 BOT_OWNER_CHAT_ID = int(os.getenv("BOT_OWNER_CHAT_ID", "0"))
 
 # ---------- Flask App ----------
@@ -43,9 +43,9 @@ data = load_data()
 
 # ---------- Telegram App ----------
 application = ApplicationBuilder().token(TOKEN).build()
-bot = application.bot
+bot = Bot(token=TOKEN)
 
-# ---------- Web Scraping Helpers ----------
+# ---------- Web Scraping ----------
 def _fetch_table_data(url, symbol, indices_map):
     try:
         res = requests.get(url, timeout=10)
@@ -190,25 +190,32 @@ application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_s
 # ---------- Flask Routes ----------
 @app.route("/")
 def home():
-    return "Syntoo Nepse Bot – Render Edition is running!", 200
+    return "✅ Syntoo Nepse Bot is Live on Render!", 200
 
 @app.route("/" + TOKEN, methods=["POST"])
 def webhook():
-    print("🔔 Webhook triggered")
-    update = Update.de_json(request.get_json(force=True), bot)
-    asyncio.run(application.process_update(update))
-    return jsonify({"ok": True})
+    try:
+        update = Update.de_json(request.get_json(force=True), bot)
+        asyncio.get_event_loop().create_task(application.process_update(update))
+        return jsonify({"ok": True})
+    except Exception as e:
+        logger.error(f"Webhook error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/send_daily_summary")
 def send_summary_route():
-    msg = asyncio.run(send_daily_summary())
+    msg = asyncio.get_event_loop().run_until_complete(send_daily_summary())
     return jsonify({"status": msg})
 
 # ---------- Run ----------
 if __name__ == "__main__":
-    if WEBHOOK_URL:
+    async def setup():
         full_url = f"{WEBHOOK_URL}{TOKEN}"
-        asyncio.run(bot.set_webhook(url=full_url))
-        logger.info(f"✅ Webhook set at {full_url}")
+        await bot.delete_webhook(drop_pending_updates=True)
+        await bot.set_webhook(full_url)
+        logger.info(f"✅ Webhook set to {full_url}")
+
+    asyncio.get_event_loop().run_until_complete(setup())
+
     port = int(os.getenv("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
